@@ -1,6 +1,7 @@
 import braid
 import braid_group
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 import numpy as np
 from typing import List, Tuple
 
@@ -83,3 +84,38 @@ def PlotTrajectories3D(trajectories: List[List[Tuple[float, float]]],
 
   plt.tight_layout()
   plt.savefig(save_file)
+
+def AnimateTrajectories(trajectories: List[List[Tuple[float, float]]], 
+                        save_file: str = 'trajectories.gif'):
+  fig, ax = plt.subplots()
+  num_agents = len(trajectories)
+  colors = plt.cm.tab10(np.linspace(0, 1, num_agents))
+  ax.grid(True)
+  ax.set_xlabel('X')
+  ax.set_ylabel('Y')
+
+  # Set axis limits dynamically.
+  positions = [position for trajectory in trajectories for position in trajectory]
+  min_x = min(position[0] for position in positions)
+  max_x = max(position[0] for position in positions)
+  min_y = min(position[1] for position in positions)
+  max_y = max(position[1] for position in positions)
+  ax.set_xlim(min_x - 0.1, max_x + 0.1)
+  ax.set_ylim(min_y - 0.1, max_y + 0.1)
+
+  # Initialize empty plot objects for trajectories.
+  trajectory_plots = [ax.plot([], [], color=colors[i])[0] for i in range(num_agents)]
+
+  # Function to update the plot for each frame.
+  def update(frame):
+    for i, trajectory in enumerate(trajectories):
+        x, y = zip(*trajectory[:frame+1])  # Unzip x, y positions
+        trajectory_plots[i].set_data(x, y)
+    return trajectory_plots
+
+  # Create the animation object.
+  num_frames = len(trajectories[0])
+  ani = FuncAnimation(fig, update, frames=num_frames, interval=100, blit=True)
+
+  # Save the animation as a GIF.
+  ani.save(save_file, writer='imagemagick')
