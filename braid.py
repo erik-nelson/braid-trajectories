@@ -67,7 +67,6 @@ class Strand:
 
     return Strand(f)
 
-
 class Braid:
   def __init__(self, strands: List[Strand]):
     assert strands

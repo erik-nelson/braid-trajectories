@@ -31,7 +31,7 @@ def Optimize(trajectories: List[List[Tuple[float, float]]]) -> List[List[Tuple[f
     for t in range(num_timestamps):
         for i in range(num_trajectories):
             for j in range(i+1, num_trajectories):
-                constraint_values.append(np.linalg.norm(positions[i, t] - positions[j, t])**2 - 0.25)  # Collision constraint
+                constraint_values.append(np.linalg.norm(positions[i, t] - positions[j, t])**2 - 0.1)  # Collision constraint
     return np.array(constraint_values)
 
   # Define constraints: Start and end positions.
