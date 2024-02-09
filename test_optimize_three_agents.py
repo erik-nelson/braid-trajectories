@@ -9,7 +9,7 @@ import utils
 # (i.e. by looking at the ordering of X values in the initial and final positions).
 # Sample all valid braids with this permutation.
 num_agents = 3
-num_timestamps = 21
+num_timestamps = 50
 words = sample.sample_braids((1, 2, 0))
 for word in tqdm.tqdm(words):
   next_braid = braid.Braid.Create(word=word, num_strands=num_agents)
@@ -32,11 +32,11 @@ for word in tqdm.tqdm(words):
 
   # Print optimized trajectories.
   for i in range(num_agents):
-    print(f"Agent {i+1} trajectory: {optimized_trajectories[i]}")
+    print(f"Agent {i+1} trajectory:\n{optimized_trajectories[i].T}")
 
   # Save initial and optimized trajectory.
   word_str = word.__str__().replace(' ', '')
-  #utils.PlotTrajectories3D(initial_trajectories, num_timestamps, 'three_agents/before_' + word_str + '.png')
-  #utils.AnimateTrajectories(initial_trajectories, 'three_agents/before_' + word_str + '.gif')
-  utils.PlotTrajectories3D(optimized_trajectories, num_timestamps, 'three_agents/after_' + word_str + '.png')
+  utils.PlotTrajectories3D(initial_trajectories, 'three_agents/before_' + word_str + '.png')
+  utils.AnimateTrajectories(initial_trajectories, 'three_agents/before_' + word_str + '.gif')
+  utils.PlotTrajectories3D(optimized_trajectories, 'three_agents/after_' + word_str + '.png')
   utils.AnimateTrajectories(optimized_trajectories, 'three_agents/after_' + word_str + '.gif')

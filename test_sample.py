@@ -38,21 +38,21 @@ assert sample.permutation_for_word(invs[0].Compose(gens[1]), num_strands=3) == (
 
 # Words on one strand ---------------------------
 # There is only one valid word that achives the permutation (0,) - the identity braid.
-words = sample.sample_braids(permutation=(0,))
+words = sample.sample_braids(goal_permutation=(0,))
 assert len(words) == 1
 assert len(words[0].characters) == 1
 assert isinstance(words[0].characters[0], braid_group.Identity)
 
 # Words on two strands --------------------------
 # Find words for the identity permutation.
-words = sample.sample_braids(permutation=(0, 1))
+words = sample.sample_braids(goal_permutation=(0, 1))
 assert len(words) == 1
 assert len(words[0].characters) == 1
 assert isinstance(words[0].characters[0], braid_group.Identity)
 
 # Find words for the (1, 0) permutation. We expect to find two - applying the generator,
 # and applying its inverse.
-words = sample.sample_braids(permutation=(1, 0))
+words = sample.sample_braids(goal_permutation=(1, 0))
 assert len(words) == 2
 
 # Found word that applies one generator.

@@ -25,7 +25,7 @@ def unsortedness(values: Tuple[int], goal: Tuple[int]) -> int:
   total = 0
   for i in range(len(values)):
     total += np.abs(i - goal.index(values[i]))
-  return total
+  return int(total)
 
 
 # Given a word on the braid group of `num_strands` strands, determine the permutation
@@ -46,7 +46,7 @@ def permutation_for_word(word: braid_group.Word, num_strands: int) -> Tuple[int]
   return tuple(permutation)
 
 
-# A class representing a path while breadth-first-searching through braid words. The
+# A class representing a path while depth-first-searching through braid words. The
 # path represents a sequence of generators and inverse generators composed against 
 # one another (i.e. a word in the braid group), as well as a history of all permutations
 # that have been achieved by sub-words in the past along this path.
@@ -58,12 +58,12 @@ class Path:
     self.word = braid_group.Identity()
     self.permutations = [permutation_for_word(self.word, self.num_strands)]
 
-  def try_visit(self, character: braid_group.Character, goal: Tuple[int]) -> bool:
+  def try_visit(self, character: braid_group.Character, goal_permutation: Tuple[int]) -> bool:
     next_word = self.word.Compose(character)
     p = permutation_for_word(next_word, self.num_strands)
 
     # Did this step achieve our goal permutation? If so don't check anything else.
-    if p == goal:
+    if p == goal_permutation:
       self.permutations.append(p)
       self.word = next_word
       return True
@@ -73,7 +73,7 @@ class Path:
       return False
 
     # Don't visit this word if it is "more unsorted" than our previous state.
-    if unsortedness(p, goal) - unsortedness(self.permutations[-1], goal) > UNSORTEDNESS_THRESHOLD:
+    if unsortedness(p, goal_permutation) - unsortedness(self.permutations[-1], goal_permutation) > UNSORTEDNESS_THRESHOLD:
       return False
     
     # Visit this word. We have not seen its permutation before.
@@ -121,35 +121,54 @@ class Path:
 # - Max unsortedness threshold.
 # - Max number of times of visiting same permutation (currently tolerance=0).
 # - Max search depth.
-def sample_braids(permutation: Tuple[int]) -> List[braid_group.Word]:
+def sample_braids(goal_permutation: Tuple[int],
+                  stop_after_num_matches: int = -1) -> List[braid_group.Word]:
 
-  num_strands = len(permutation)
+  num_strands = len(goal_permutation)
 
   # Candidate "directions" that we can take at each time include the generators and
   # their inverses.
   dirs = ([braid_group.Generator(i) for i in range(num_strands - 1)] + 
           [braid_group.InverseGenerator(i) for i in range(num_strands - 1)])
 
-  # Breadth first search over generators and inverse generators for a word (a path) that
+  # Depth first search over generators and inverse generators for a word (a path) that
   # achieves the right permutation.
   paths = deque([Path(num_strands)])
   matches = []
-  if paths[0].permutations[-1] == permutation:
+  if paths[0].permutations[-1] == goal_permutation:
     # Insert the identity braid if it matches the goal permutation.
     matches.append(paths[0].word)
 
-  while paths:
-    path = paths.popleft()
+  done = False
+  while paths and not done:
+    path = paths.pop()
 
-    for d in dirs:
+    # Rank candidate next directions by how much more sorted they make our braid. This guides the
+    # search, making it much (orders of magnitude) faster than naive dfs.
+    next_dirs = copy.deepcopy(dirs)
+    def _score_dir(d: braid_group.Character) -> int:
+      next_word = path.word.Compose(d)
+      p = permutation_for_word(next_word, num_strands)
+      next_value = unsortedness(p, goal_permutation)
+      curr_value = unsortedness(path.permutations[-1], goal_permutation)
+      return next_value - curr_value
+    next_dirs = sorted(next_dirs, key=_score_dir, reverse=True)
+
+    for d in next_dirs:
       # Try to move along this direction.
       new_path = copy.deepcopy(path)
-      if not new_path.try_visit(character=d, goal=permutation):
+      if not new_path.try_visit(character=d, goal_permutation=goal_permutation):
         continue
 
       # Check if moving in this direction got us to our goal permutation.
-      if new_path.permutations[-1] == permutation:
+      if new_path.permutations[-1] == goal_permutation:
         matches.append(new_path.word)
+
+        # Early termination criteria.
+        if stop_after_num_matches > 0 and len(matches) >= stop_after_num_matches: 
+          done = True
+          break
+
         continue
       
       paths.append(new_path)
